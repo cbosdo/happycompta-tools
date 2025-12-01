@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+# SPDX-FileCopyrightText: 2025 SUSE LLC
+# SPDX-FileContributor: Cédric Bosdonnat
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mkdir -p bin
+go build -o bin ./...

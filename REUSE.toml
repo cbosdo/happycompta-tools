@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2025 SUSE LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+version = 1
+SPDX-PackageName = "happycompta-tools"
+SPDX-PackageSupplier = "Cédric Bosdonnat <cbosdonnat@suse.com>"
+SPDX-PackageDownloadLocation = "https://github.com/cbosdo/happycompta-tools"
+
+[[annotations]]
+path = ["go.mod", "go.sum"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 SUSE LLC"
+SPDX-License-Identifier = "Apache-2.0"
