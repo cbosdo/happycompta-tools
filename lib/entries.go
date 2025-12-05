@@ -67,8 +67,8 @@ func (c *Client) AddEntry(operation *Entry) error {
 	formWriter := multipart.NewWriter(writer)
 
 	go func() {
-		defer writer.Close()
-		defer formWriter.Close()
+		defer func() { _ = writer.Close() }()
+		defer func() { _ = formWriter.Close() }()
 
 		if err := formWriter.WriteField("_token", token); err != nil {
 			writer.CloseWithError(fmt.Errorf("error writing _token: %w", err))
@@ -174,7 +174,7 @@ func (c *Client) AddEntry(operation *Entry) error {
 				writer.CloseWithError(fmt.Errorf("error opening file %s: %w", filePath, err))
 				return
 			}
-			defer file.Close()
+			defer func() { _ = file.Close() }()
 
 			filename := filepath.Base(filePath)
 
@@ -251,10 +251,10 @@ func (c *Client) AddEntry(operation *Entry) error {
 	resp, err := c.client.Post(url_base+"/operations/store", formWriter.FormDataContentType(), reader)
 	c.followRedirects(true)
 	if err != nil {
-		io.Copy(io.Discard, reader)
+		_, _ = io.Copy(io.Discard, reader)
 		return fmt.Errorf("HTTP POST failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusFound {
 		responseBody, _ := io.ReadAll(resp.Body)
@@ -284,7 +284,7 @@ func (c *Client) getNextEntryNumber(budget Budget, kind Kind) (id string, number
 		return
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	type resultType struct {
 		ID     string `json:"identifiant"`

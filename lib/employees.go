@@ -57,7 +57,7 @@ func (c *Client) ListEmployees() (employees []Employee, err error) {
 		return
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return parseEmployeesResponse(resp.Body)
 }
 
@@ -112,17 +112,14 @@ func parseEmployeesTable(doc *html.Node) (employees []Employee, err error) {
 			} else if isInsideTbody && n.Data == "td" {
 				tdCount++
 
-				if tdCount == columnActive {
+				switch tdCount {
+				case columnActive:
 					currentEmployee.Active = findClassText(n, "hide") == "1"
-				}
-
-				if tdCount == columnLastname {
+				case columnLastname:
 					currentEmployee.Lastname = html.UnescapeString(extractTextContent(n))
-				} else if tdCount == columnFirstname {
+				case columnFirstname:
 					currentEmployee.Firstname = html.UnescapeString(extractTextContent(n))
-				}
-
-				if tdCount == columnsActions {
+				case columnsActions:
 					currentEmployee.ID = parseEmployeeID(n)
 				}
 			}

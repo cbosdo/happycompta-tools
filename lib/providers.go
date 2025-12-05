@@ -37,7 +37,7 @@ func (c *Client) ListProviders() (providers []Provider, err error) {
 		err = fmt.Errorf("failed to get the providers: %s", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("failed to get the providers, got %d status code", resp.StatusCode)

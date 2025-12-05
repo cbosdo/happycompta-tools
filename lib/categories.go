@@ -27,7 +27,7 @@ func (c *Client) ListCategories() (categories []Category, err error) {
 		err = fmt.Errorf("failed to get the categories: %s", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("failed to get the categories, got %d status code", resp.StatusCode)

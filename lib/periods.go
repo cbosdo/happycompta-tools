@@ -30,7 +30,7 @@ func (c *Client) ListPeriods() (periods []Period, err error) {
 		err = fmt.Errorf("failed to get the periods: %s", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("failed to get the periods, got %d status code", resp.StatusCode)

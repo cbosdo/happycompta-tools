@@ -26,15 +26,15 @@ var rootCmd = &cobra.Command{
 		var cfg Config
 
 		if err := viper.Unmarshal(&cfg); err != nil {
-			return fmt.Errorf("Error unmarshaling the configuration: %s", err)
+			return fmt.Errorf("error unmarshaling the configuration: %s", err)
 		}
 		cfg.CSVPath = args[0]
 
 		if cfg.Email == "" {
-			log.Fatalf("Email parameter or config value is required\n")
+			log.Fatalf("email parameter or config value is required\n")
 		}
 		if cfg.Password == "" {
-			log.Fatalf("Password parameter or config value is required\n")
+			log.Fatalf("password parameter or config value is required\n")
 		}
 
 		// Actually do something
@@ -103,7 +103,7 @@ func bindFlagsToViper(flag *pflag.Flag) {
 func initConfig() {
 	configPath, err := rootCmd.PersistentFlags().GetString("config")
 	if err != nil {
-		log.Fatalf("Error reading config flag: %s", err)
+		log.Fatalf("error reading config flag: %s", err)
 	}
 
 	if configPath != "" {
@@ -118,7 +118,7 @@ func initConfig() {
 			return
 		}
 
-		log.Fatalf("Error loading configuration: %s\n", err)
+		log.Fatalf("error loading configuration: %s\n", err)
 	}
 }
 

@@ -38,7 +38,7 @@ func (c *Client) Login(email string, password string) error {
 	if resp.StatusCode != http.StatusOK {
 		return errors.New("failed to login")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, _ := io.ReadAll(resp.Body)
 	if bytes.Contains(data, []byte("Connectez-vous")) {
@@ -60,7 +60,7 @@ func (c *Client) getToken(url string) (token string, err error) {
 	}
 
 	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
 		err = fmt.Errorf("failed to read the token request body: %s", err)
 		return

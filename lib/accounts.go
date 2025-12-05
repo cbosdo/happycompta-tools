@@ -26,7 +26,7 @@ func (c *Client) ListAccounts() (accounts []Account, err error) {
 		err = fmt.Errorf("failed to get the accounts: %s", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("failed to get the accounts, got %d status code", resp.StatusCode)

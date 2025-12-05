@@ -20,17 +20,20 @@ import (
 	"github.com/cbosdo/happycompta-tools/lib"
 )
 
-func getCSVReader(path string, cfg CSVConfig) (*csv.Reader, func() error, error) {
+func getCSVReader(path string, cfg CSVConfig) (r *csv.Reader, cleaner func(), err error) {
 	f, err := os.Open(path)
+	cleaner = func() { _ = f.Close() }
 	if err != nil {
-		return nil, f.Close, fmt.Errorf("failed to open CSV file %s: %w", path, err)
+		err = fmt.Errorf("failed to open CSV file %s: %w", path, err)
+		return
 	}
 
-	r := csv.NewReader(f)
+	r = csv.NewReader(f)
 
 	commaRune, err := cfg.GetCommaRune()
 	if err != nil {
-		return nil, f.Close, fmt.Errorf("CSV comma config error: %w", err)
+		err = fmt.Errorf("CSV comma config error: %w", err)
+		return
 	}
 	if commaRune != 0 {
 		r.Comma = commaRune
@@ -38,13 +41,14 @@ func getCSVReader(path string, cfg CSVConfig) (*csv.Reader, func() error, error)
 
 	commentRune, err := cfg.GetCommentRune()
 	if err != nil {
-		return nil, f.Close, fmt.Errorf("CSV comment config error: %w", err)
+		err = fmt.Errorf("CSV comment config error: %w", err)
+		return
 	}
 	if commentRune != 0 {
 		r.Comment = commentRune
 	}
 
-	return r, f.Close, nil
+	return
 }
 
 // parseCSV builds entries out of the CSV reader..
@@ -292,7 +296,7 @@ func createEntryFromRow(
 			return
 		}
 	} else {
-		err = fmt.Errorf("Missing payment method on row %d", rowIndex)
+		err = fmt.Errorf("missing payment method on row %d", rowIndex)
 		return
 	}
 
@@ -344,7 +348,7 @@ func createEntryFromRow(
 
 		if !ok {
 			err = fmt.Errorf(
-				"unknown employee '%s' for row %d, the value needs to be in the <Lastname> <Firstname> format.",
+				"unknown employee '%s' for row %d, the value needs to be in the <Lastname> <Firstname> format",
 				employeeStr, rowIndex,
 			)
 			return
@@ -356,9 +360,10 @@ func createEntryFromRow(
 		provider, ok := providers[strings.ToLower(providerStr)]
 		if !ok {
 			err = fmt.Errorf(
-				"unknown provider '%s' for row %d, the value needs to match the name of an existing provider.",
+				"unknown provider '%s' for row %d, the value needs to match the name of an existing provider",
 				providerStr, rowIndex,
 			)
+			return
 		}
 		entry.Party = &provider
 	}
@@ -407,10 +412,11 @@ func getAccountFromBankBudget(
 	matchingAllBudgets := []lib.Account{}
 	matching := []lib.Account{}
 	for _, account := range accounts {
-		if strings.ToLower(account.Bank) == strings.ToLower(bank) {
-			if account.Budget == budget {
+		if strings.EqualFold(account.Bank, bank) {
+			switch account.Budget {
+			case budget:
 				matching = append(matching, account)
-			} else if account.Budget == lib.BudgetUndefined {
+			case lib.BudgetUndefined:
 				// Undefined budget on an account means both ASC and FON
 				matchingAllBudgets = append(matchingAllBudgets, account)
 			}
@@ -426,7 +432,7 @@ func getAccountFromBankBudget(
 		return
 	} else if len(matching) > 1 {
 		err = fmt.Errorf(
-			"More than one account found for the %s budget at %s bank. This is not supported yet.",
+			"more than one account found for the %s budget at %s bank. This is not supported yet",
 			budget.String(), bank,
 		)
 		return
@@ -435,11 +441,11 @@ func getAccountFromBankBudget(
 		return
 	} else if len(matchingAllBudgets) > 1 {
 		err = fmt.Errorf(
-			"More than one account found for the both budgets at %s bank. This is not supported yet.", bank,
+			"more than one account found for the both budgets at %s bank. This is not supported yet", bank,
 		)
 		return
 	}
 
-	err = fmt.Errorf("No account found matching the %s budget at %s bank", budget.String(), bank)
+	err = fmt.Errorf("no account found matching the %s budget at %s bank", budget.String(), bank)
 	return
 }
