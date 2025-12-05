@@ -81,6 +81,8 @@ func parseCSV(
 	providersMap := createProvidersMap(providers)
 	periodsMap := createPeriodsMap(periods)
 
+	var allErrors []error
+
 	// Load each row as an entry
 	for rowIndex := 1; ; rowIndex++ {
 		row, err := r.Read()
@@ -88,19 +90,22 @@ func parseCSV(
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to read row %d: %s", rowIndex, err)
+			allErrors = append(allErrors, fmt.Errorf("failed to read row %d: %s", rowIndex, err))
+			continue
 		}
 
 		entry, err := createEntryFromRow(
 			row, colMap, defaults, rowIndex, accounts, categoriesMap, employeesMap, providersMap, periodsMap,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to process entry on row %d: %s", rowIndex, err)
+			allErrors = append(allErrors, fmt.Errorf("failed to process entry on row %d: %s", rowIndex, err))
+			continue
 		}
 
 		entries = append(entries, entry)
 	}
 
+	err = errors.Join(allErrors...)
 	return
 }
 
@@ -233,32 +238,35 @@ func createEntryFromRow(
 	providers map[string]lib.Provider,
 	periods map[string]lib.Period,
 ) (entry lib.Entry, err error) {
+	var allErrors []error // Initialize a slice to collect errors
+
 	// Date
 	dateStr := getField(row, colMap.Date)
 	if dateStr == "" {
-		err = fmt.Errorf("date column is missing or empty")
-		return
+		allErrors = append(allErrors, fmt.Errorf("date column is missing or empty"))
+	} else {
+		date, dateErr := time.Parse(lib.DateLayout, dateStr)
+		if dateErr != nil {
+			allErrors = append(allErrors, fmt.Errorf("failed to parse date '%s': %w", dateStr, dateErr))
+		} else {
+			entry.Date = date
+		}
 	}
-	date, err := time.Parse(lib.DateLayout, dateStr)
-	if err != nil {
-		err = fmt.Errorf("failed to parse date '%s': %w", dateStr, err)
-		return
-	}
-	entry.Date = date
 
 	// Name
 	entry.Name = getField(row, colMap.Name)
 
 	// Amount
 	amountStr := getField(row, colMap.Amount)
+	amount := 0.0
 	if amountStr == "" {
-		err = fmt.Errorf("amount column is missing or empty")
-		return
-	}
-	amount, err := parseAmount(amountStr)
-	if err != nil {
-		err = fmt.Errorf("failed to parse amount '%s': %s", amountStr, err)
-		return
+		allErrors = append(allErrors, fmt.Errorf("amount column is missing or empty"))
+	} else {
+		var amountErr error
+		amount, amountErr = parseAmount(amountStr)
+		if amountErr != nil {
+			allErrors = append(allErrors, fmt.Errorf("failed to parse amount '%s': %s", amountStr, amountErr))
+		}
 	}
 
 	// Comment
@@ -268,11 +276,10 @@ func createEntryFromRow(
 	kind := getOptionalField(row, colMap.Kind, defaults.Kind)
 	entry.Kind = lib.NewKind(kind)
 	if entry.Kind == lib.KindUndefined {
-		err = fmt.Errorf(
-			"invalid entry type '%s' on row %d, accepted values are %s, %s and %s",
-			kind, rowIndex, lib.KindSpend, lib.KindTake, lib.KindAllocation,
-		)
-		return
+		allErrors = append(allErrors, fmt.Errorf(
+			"invalid entry type '%s', accepted values are %s, %s and %s",
+			kind, lib.KindSpend, lib.KindTake, lib.KindAllocation,
+		))
 	}
 
 	// Budget, the accepted values are FON, ASC or AEP.
@@ -281,8 +288,7 @@ func createEntryFromRow(
 		entry.Budget = lib.NewBudgetFromString(budgetStr)
 	}
 	if entry.Budget == lib.BudgetUndefined {
-		err = fmt.Errorf("invalid budget '%s' on row %d", budgetStr, rowIndex)
-		return
+		allErrors = append(allErrors, fmt.Errorf("invalid budget '%s'", budgetStr))
 	}
 
 	// PaymentMethod
@@ -292,37 +298,42 @@ func createEntryFromRow(
 		if paymentMethod != lib.PaymentMethodUndefined {
 			entry.PaymentMethod = paymentMethod
 		} else {
-			err = fmt.Errorf("invalid payment method '%s' on row %d", paymentMethodStr, rowIndex)
-			return
+			allErrors = append(allErrors, fmt.Errorf("invalid payment method '%s'", paymentMethodStr))
 		}
 	} else {
-		err = fmt.Errorf("missing payment method on row %d", rowIndex)
-		return
+		allErrors = append(allErrors, fmt.Errorf("missing payment method"))
 	}
 
 	// Category
 	categoryName := getOptionalField(row, colMap.Category, defaults.Category)
-	category, ok := categories[fmt.Sprintf("%s|%s", entry.Budget, categoryName)]
-	if !ok {
-		err = fmt.Errorf(
-			"invalid category '%s' name / '%s' budget combination for row %d",
-			categoryName, entry.Budget, rowIndex,
-		)
-		return
+	var category lib.Category
+	categoryOK := false
+
+	// Only attempt category lookup if budget is valid (to avoid logging redundant errors)
+	if entry.Budget != lib.BudgetUndefined {
+		categoryKey := fmt.Sprintf("%s|%s", entry.Budget, categoryName)
+		category, categoryOK = categories[categoryKey]
+
+		if !categoryOK {
+			allErrors = append(allErrors, fmt.Errorf(
+				"invalid category '%s' name / '%s' budget combination",
+				categoryName, entry.Budget,
+			))
+		}
 	}
 
-	// Stock
-	stockStr := getField(row, colMap.Stock)
+	// Stock (Only check if category lookup was successful)
 	stock := 0
-	if bool(category.Stock) {
+	if categoryOK && bool(category.Stock) {
+		stockStr := getField(row, colMap.Stock)
 		if stockStr == "" {
-			err = fmt.Errorf("no stock defined for %d row but %s category needs it", rowIndex, category.Name)
-			return
-		}
-		stock, err = strconv.Atoi(stockStr)
-		if err != nil {
-			err = fmt.Errorf("failed to parse '%s' stock as an integer for %d row", stockStr, rowIndex)
-			return
+			allErrors = append(allErrors, fmt.Errorf("no stock defined but %s category needs it", category.Name))
+		} else {
+			var stockErr error
+			stock, stockErr = strconv.Atoi(stockStr)
+			if stockErr != nil {
+				allErrors = append(allErrors, fmt.Errorf("failed to parse '%s' stock as an integer", stockStr))
+			}
 		}
 	}
 
@@ -335,37 +346,34 @@ func createEntryFromRow(
 	}
 
 	// Party: the employee and provider fields are mutually exclusive and optional.
-
 	employeeStr := getField(row, colMap.Employee)
 	providerStr := getField(row, colMap.Provider)
 	if employeeStr != "" && providerStr != "" {
-		err = fmt.Errorf("row %d has both employee ('%s') and provider ('%s') specified", rowIndex, employeeStr, providerStr)
-		return
-	}
-
-	if employeeStr != "" {
-		employee, ok := employees[strings.ToLower(employeeStr)]
-
-		if !ok {
-			err = fmt.Errorf(
-				"unknown employee '%s' for row %d, the value needs to be in the <Lastname> <Firstname> format",
-				employeeStr, rowIndex,
-			)
-			return
+		allErrors = append(allErrors, fmt.Errorf("has both employee ('%s') and provider ('%s') specified", employeeStr, providerStr))
+	} else {
+		if employeeStr != "" {
+			employee, ok := employees[strings.ToLower(employeeStr)]
+			if !ok {
+				allErrors = append(allErrors, fmt.Errorf(
+					"unknown employee '%s', the value needs to be in the <Lastname> <Firstname> format",
+					employeeStr,
+				))
+			} else {
+				entry.Party = &employee
+			}
 		}
-		entry.Party = &employee
-	}
 
-	if providerStr != "" {
-		provider, ok := providers[strings.ToLower(providerStr)]
-		if !ok {
-			err = fmt.Errorf(
-				"unknown provider '%s' for row %d, the value needs to match the name of an existing provider",
-				providerStr, rowIndex,
-			)
-			return
+		if providerStr != "" {
+			provider, ok := providers[strings.ToLower(providerStr)]
+			if !ok {
+				allErrors = append(allErrors, fmt.Errorf(
+					"unknown provider '%s', the value needs to match the name of an existing provider",
+					providerStr,
+				))
+			} else {
+				entry.Party = &provider
+			}
 		}
-		entry.Party = &provider
 	}
 
 	// Look for the period
@@ -375,18 +383,28 @@ func createEntryFromRow(
 	}
 	period, ok := periods[periodStr]
 	if !ok {
-		err = fmt.Errorf("couldn't find the '%s' period for row %d. Is there a current one defined?", periodStr, rowIndex)
-		return
+		allErrors = append(allErrors, fmt.Errorf("couldn't find the '%s' period. Is there a current one defined?", periodStr))
+	} else {
+		entry.Period = period.ID
 	}
-	entry.Period = period.ID
 
 	// Look for the account
 	bank := getOptionalField(row, colMap.Bank, defaults.Bank)
-	account, err := getAccountFromBankBudget(accounts, bank, entry.Budget)
-	if err != nil {
-		return
+	// Only try to get account if the budget was successfully determined
+	if entry.Budget != lib.BudgetUndefined {
+		account, accErr := getAccountFromBankBudget(accounts, bank, entry.Budget)
+		if accErr != nil {
+			allErrors = append(allErrors, fmt.Errorf("failed to find account: %w", accErr))
+		} else {
+			entry.Account = account
+		}
 	}
-	entry.Account = account
+
+	// Check for collected errors
+	if len(allErrors) > 0 {
+		// Return an empty entry and the combined errors
+		return lib.Entry{}, errors.Join(allErrors...)
+	}
 
 	return entry, nil
 }
