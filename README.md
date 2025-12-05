@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 SUSE LLC
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # happy-compta.fr tools
 
 This project is a Go library to interact with happy-compta.fr form code.
