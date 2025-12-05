@@ -378,6 +378,69 @@ func TestCreateEntryFromRow_DateParsingFailure(t *testing.T) {
 	}
 }
 
+func TestCreateEntryFromRow_MultipleErrors(t *testing.T) {
+	colMap := getMinimalColMap()
+	accounts := []lib.Account{
+		{ID: 10, Bank: "First National Bank", Budget: lib.BudgetFON, Abbrev: "FNB"},
+	}
+	defaults := getBaseDefaults()
+	categoriesMap := createCategoriesMap(getMockCategories())
+	employeesMap := createEmployeesMap([]lib.Employee{
+		{ID: "E10", Lastname: "DOE", Firstname: "JOHN", Active: true},
+	})
+	providersMap := createProvidersMap([]lib.Provider{
+		{ID: "P50", Name: "TechCorp Solutions", City: "Faketown"},
+	})
+	periodsMap := createPeriodsMap(getMockPeriods())
+
+	// Row with three errors:
+	// 1. Invalid Date: "2025-01-01" (needs "01/01/2025" for `lib.DateLayout`)
+	// 2. Both Employee and Provider set (mutual exclusion violation).
+	// 3. Invalid Budget: "INVALID_BUDGET"
+	row := []string{
+		"2025-01-01",         // DATE (Error 1)
+		"Test",               // NAME
+		"10",                 // AMOUNT
+		"Office Supplies",    // CATEGORY
+		"INVALID_BUDGET",     // BUDGET (Error 3)
+		"John Doe",           // EMPLOYEE (Part of Error 2)
+		"TechCorp Solutions", // PROVIDER (Part of Error 2)
+		"card",               // PAYMENT
+		"depenses",           // KIND
+		"", "", "",           // COMMENT, STOCK, PERIOD
+		"First National Bank", // BANK
+	}
+
+	_, err := createEntryFromRow(row, colMap, defaults, 1, accounts,
+		categoriesMap, employeesMap, providersMap, periodsMap)
+
+	if err == nil {
+		t.Fatalf("Expected multiple errors, got nil")
+	}
+
+	errorString := err.Error()
+
+	// Check for the error from Date parsing
+	if !strings.Contains(errorString, "failed to parse date '2025-01-01'") {
+		t.Errorf("Expected date parsing error not found in multi-error: %s", errorString)
+	}
+
+	// Check for the mutual exclusion error
+	if !strings.Contains(errorString, "has both employee ('John Doe') and provider ('TechCorp Solutions') specified") {
+		t.Errorf("Expected mutual exclusion error not found in multi-error: %s", errorString)
+	}
+
+	// Check for the invalid budget error
+	if !strings.Contains(errorString, "invalid budget 'INVALID_BUDGET'") {
+		t.Errorf("Expected invalid budget error not found in multi-error: %s", errorString)
+	}
+
+	// Check the number of errors
+	if strings.Count(errorString, "\n") < 2 { // errors.Join separates the first error from the rest with one newline, and subsequent errors with newlines.
+		t.Errorf("Expected at least 3 errors separated by newlines, but found only %d newlines: %s", strings.Count(errorString, "\n"), errorString)
+	}
+}
+
 func TestGetAccountFromBankBudget_Success(t *testing.T) {
 	tests := []struct {
 		name     string
