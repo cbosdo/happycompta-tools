@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,37 +18,6 @@ import (
 
 	"github.com/cbosdo/happycompta-tools/lib"
 )
-
-func getCSVReader(path string, cfg CSVConfig) (r *csv.Reader, cleaner func(), err error) {
-	f, err := os.Open(path)
-	cleaner = func() { _ = f.Close() }
-	if err != nil {
-		err = fmt.Errorf("failed to open CSV file %s: %w", path, err)
-		return
-	}
-
-	r = csv.NewReader(f)
-
-	commaRune, err := cfg.GetCommaRune()
-	if err != nil {
-		err = fmt.Errorf("CSV comma config error: %w", err)
-		return
-	}
-	if commaRune != 0 {
-		r.Comma = commaRune
-	}
-
-	commentRune, err := cfg.GetCommentRune()
-	if err != nil {
-		err = fmt.Errorf("CSV comment config error: %w", err)
-		return
-	}
-	if commentRune != 0 {
-		r.Comment = commentRune
-	}
-
-	return
-}
 
 // parseCSV builds entries out of the CSV reader..
 // Only the data from the CSV file are loaded, so no receipt will be attached by this function.

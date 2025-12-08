@@ -8,10 +8,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 
+	"github.com/cbosdo/happycompta-tools/internal/common"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -78,48 +77,13 @@ This is usually needed for check allocations and orders.`)
 	rootCmd.Flags().String("csv-columns-bank", "account", `CSV column name for the name of the bank holding the account.
 This is used in conjunction with the budget to identify the target account.`)
 
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(func() { common.InitConfig(rootCmd) })
 
-	rootCmd.PersistentFlags().VisitAll(bindFlagsToViper)
-	rootCmd.Flags().VisitAll(bindFlagsToViper)
+	rootCmd.PersistentFlags().VisitAll(common.BindFlagsToViper)
+	rootCmd.Flags().VisitAll(common.BindFlagsToViper)
 
 	viper.SetEnvPrefix("LOADER")
 	viper.AutomaticEnv()
-}
-
-// bindFlagsToViper is a helper function to bind a flag to a Viper key.
-func bindFlagsToViper(flag *pflag.Flag) {
-	key := strings.ReplaceAll(flag.Name, "-", ".")
-
-	if flag.Name == "config" {
-		return
-	}
-
-	if err := viper.BindPFlag(key, flag); err != nil {
-		log.Fatalf("error binding flag '%s' to viper key '%s': %v\n", flag.Name, key, err)
-	}
-}
-
-func initConfig() {
-	configPath, err := rootCmd.PersistentFlags().GetString("config")
-	if err != nil {
-		log.Fatalf("error reading config flag: %s", err)
-	}
-
-	if configPath != "" {
-		viper.SetConfigFile(configPath)
-	} else {
-		viper.SetConfigName("config")
-		viper.AddConfigPath(".")
-	}
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok && configPath == "" {
-			return
-		}
-
-		log.Fatalf("error loading configuration: %s\n", err)
-	}
 }
 
 func main() {
