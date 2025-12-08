@@ -5,7 +5,11 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/cbosdo/happycompta-tools/internal/common"
+)
 
 // CSVColumns holds the mapping for individual column names in the CSV file.
 type CSVColumns struct {
@@ -26,9 +30,8 @@ type CSVColumns struct {
 
 // CSVConfig provides a logical grouping for all CSV-related settings.
 type CSVConfig struct {
-	Columns CSVColumns `mapstructure:"columns"`
-	Comma   string     `mapstructure:"comma"`
-	Comment string     `mapstructure:"comment"`
+	common.CSVParams `mapstructure:",squash"`
+	Columns          CSVColumns `mapstructure:"columns"`
 }
 
 // getSingleRune converts a string field to a rune, validating that it's a single character.

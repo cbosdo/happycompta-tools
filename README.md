@@ -16,3 +16,4 @@ Implemented features:
 A set of tools comes with the library to demonstrate its use.
 - dumper: mostly meant for debugging, it dumps all the lists that can already be retrieved
 - loader: adds entries from a CSV file and an optional folder of receipts
+- csv-to-sepa: convert a CSV file into a SEPA transfer XML ([PAIN 001.001.03](https://www.cfonb.org/instruments-de-paiement/virement)) file

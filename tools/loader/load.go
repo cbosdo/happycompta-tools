@@ -10,6 +10,7 @@ import (
 
 	"log"
 
+	"github.com/cbosdo/happycompta-tools/internal/common"
 	"github.com/cbosdo/happycompta-tools/lib"
 )
 
@@ -54,7 +55,7 @@ func loadImpl(cfg Config) error {
 		return errors.New("no accounting period defined in happy-compta")
 	}
 
-	r, cleaner, err := getCSVReader(cfg.CSVPath, cfg.CSV)
+	r, cleaner, err := common.GetCSVReader(cfg.CSV.CSVParams, cfg.CSVPath)
 	defer cleaner()
 	if err != nil {
 		return err
