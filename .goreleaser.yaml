@@ -10,21 +10,6 @@ before:
   hooks:
     - go mod tidy
 
-sboms:
-  - artifacts: archive
-    documents:
-      - "${artifact}.spdx.json"
-    cmd: syft
-    args:
-      # Use Syft to analyze the artifact and output SPDX JSON
-      - "$artifact"
-      - "--output"
-      - "spdx-json=$document"
-      - "--exclude"
-      - "./go.mod"
-      - "--exclude"
-      - "./go.sum"
-
 builds:
   - id: loader
     main: ./tools/loader

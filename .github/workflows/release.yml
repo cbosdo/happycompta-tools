@@ -32,3 +32,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: release --clean
+
+      - name: Generate and Publish SBOMs for all artifacts
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./dist/
