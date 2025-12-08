@@ -15,6 +15,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+// These variables are set during the build process via ldflags.
+var (
+	version  = "dev"
+	revision = "HEAD"
+)
+
 type Config struct {
 	Output  string
 	Debtor  Party
@@ -37,9 +43,10 @@ type ColumnsConfig struct {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   path.Base(os.Args[0]) + "path/to/data",
-	Short: "Convert a CSV file to a SEPA transfer file",
-	Args:  cobra.ExactArgs(1),
+	Use:     path.Base(os.Args[0]) + "path/to/data",
+	Short:   "Convert a CSV file to a SEPA transfer file",
+	Args:    cobra.ExactArgs(1),
+	Version: fmt.Sprintf("%s (%s)", version, revision),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var flags Config
 		if err := viper.Unmarshal(&flags); err != nil {
@@ -65,6 +72,8 @@ func init() {
 	// CSV Structure flags
 	rootCmd.Flags().String("csv-comma", "", "CSV field separator character.")
 	rootCmd.Flags().String("csv-comment", "", "CSV comment character.")
+
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
 	cobra.OnInitialize(func() { common.InitConfig(rootCmd) })
 

@@ -8,92 +8,66 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/cbosdo/happycompta-tools/lib"
+	"github.com/cbosdo/happycompta-tools/internal/common"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
+// These variables are set during the build process via ldflags.
+var (
+	version  = "dev"
+	revision = "HEAD"
+)
+
+// Config holds the application parameters.
+type Config struct {
+	Email    string `mapstructure:"email"`
+	Password string `mapstructure:"password"`
+}
+
+// Define the root command
+var rootCmd = &cobra.Command{
+	Use:     "dumper",
+	Short:   "A program dumping data from happy-compta",
+	Version: fmt.Sprintf("%s (%s)", version, revision),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var cfg Config
+
+		if err := viper.Unmarshal(&cfg); err != nil {
+			return fmt.Errorf("error unmarshaling the configuration: %s", err)
+		}
+
+		if cfg.Email == "" {
+			log.Fatalf("email parameter or config value is required\n")
+		}
+		if cfg.Password == "" {
+			log.Fatalf("password parameter or config value is required\n")
+		}
+
+		// Actually do something
+		return dump(cfg)
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringP("config", "c", "", "Configuration file path")
+	rootCmd.PersistentFlags().String("email", "", "User email address (REQUIRED)")
+	rootCmd.PersistentFlags().String("password", "", "User password (REQUIRED)")
+
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
+
+	cobra.OnInitialize(func() { common.InitConfig(rootCmd) })
+
+	rootCmd.PersistentFlags().VisitAll(common.BindFlagsToViper)
+	rootCmd.Flags().VisitAll(common.BindFlagsToViper)
+
+	viper.SetEnvPrefix("LOADER")
+	viper.AutomaticEnv()
+}
+
 func main() {
-	fmt.Printf("Dump happy-compta data for test purpose\n")
-
-	if len(os.Args) != 3 {
-		log.Fatalf("%s email password", os.Args[0])
-	}
-
-	client, err := lib.NewClient()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
-	}
-	if err := client.Login(os.Args[1], os.Args[2]); err != nil {
-		log.Fatal(err)
-	}
-
-	employees, err := client.ListEmployees()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Employees (%d):\n", len(employees))
-	for _, emp := range employees {
-		active := "inactive"
-		if emp.Active {
-			active = "active"
-		}
-
-		fmt.Printf("%s: %s,%s (%s)\n", emp.ID, emp.Lastname, emp.Firstname, active)
-	}
-
-	providers, err := client.ListProviders()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\nProviders (%d):\n", len(providers))
-	for _, p := range providers {
-		archived := ""
-		if p.Archived {
-			archived = " (Archived)"
-		}
-		fmt.Printf(
-			"%s: %s%s\n    %s - %s %s\n    %s\n    %s\n    %s\n",
-			p.ID, p.Name, archived,
-			p.Address, p.ZipCode, p.City,
-			p.Phone,
-			p.Email,
-			p.Comment,
-		)
-	}
-
-	periods, err := client.ListPeriods()
-	fmt.Printf("\nPeriods:\n")
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, p := range periods {
-		fmt.Printf("%s: %s - %s (%d)\n", p.ID, p.Start.Format(lib.DateLayout), p.End.Format(lib.DateLayout), p.Status)
-	}
-
-	accounts, err := client.ListAccounts()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\nAccounts:\n")
-	for _, account := range accounts {
-		fmt.Printf("%d: %s (%d - %s)\n", account.ID, account.Bank, account.Budget, account.Abbrev)
-	}
-
-	categories, err := client.ListCategories()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\nCategories (%d)\n", len(categories))
-	for _, category := range categories {
-		fmt.Printf(
-			"%d: %s (%s), parent: %d, section: %d\n",
-			category.ID,
-			category.Name,
-			category.Kind,
-			category.ParentID,
-			category.Budget,
-		)
 	}
 }

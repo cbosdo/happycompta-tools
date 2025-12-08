@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: 2025 SUSE LLC
+# SPDX-FileContributor: Cédric Bosdonnat
+#
+# SPDX-License-Identifier: Apache-2.0
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+sboms:
+  - artifacts: archive
+    documents:
+      - "${artifact}.spdx.json"
+    cmd: syft
+    args:
+      # Use Syft to analyze the artifact and output SPDX JSON
+      - "$artifact"
+      - "--output"
+      - "spdx-json=$document"
+      - "--exclude"
+      - "./go.mod"
+      - "--exclude"
+      - "./go.sum"
+
+builds:
+  - id: loader
+    main: ./tools/loader
+    binary: loader
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X 'github.com/cbosdo/happycompta-tools/tools/loader.version={{.Version}}'
+      - -X 'github.com/cbosdo/happycompta-tools/tools/loader.revision={{.FullCommit}}'
+
+  - id: dumper
+    main: ./tools/dumper
+    binary: dumper
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X 'github.com/cbosdo/happycompta-tools/tools/dumper.version={{.Version}}'
+      - -X 'github.com/cbosdo/happycompta-tools/tools/dumper.revision={{.FullCommit}}'
+
+  - id: csv-to-sepa
+    main: ./tools/csv-to-sepa
+    binary: csv-to-sepa
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X 'github.com/cbosdo/happycompta-tools/tools/csv-to-sepa.version={{.Version}}'
+      - -X 'github.com/cbosdo/happycompta-tools/tools/csv-to-sepa.revision={{.FullCommit}}'
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSES/* 
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

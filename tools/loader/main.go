@@ -14,13 +14,20 @@ import (
 	"github.com/spf13/viper"
 )
 
+// These variables are set during the build process via ldflags.
+var (
+	version  = "dev"
+	revision = "HEAD"
+)
+
 var load func(Config) error = loadImpl
 
 // Define the root command
 var rootCmd = &cobra.Command{
-	Use:   "loader path/to/file.csv",
-	Short: "A program loading entries from a CSV file as entries into happy-compta",
-	Args:  cobra.ExactArgs(1),
+	Use:     "loader path/to/file.csv",
+	Short:   "A program loading entries from a CSV file as entries into happy-compta",
+	Args:    cobra.ExactArgs(1),
+	Version: fmt.Sprintf("%s (%s)", version, revision),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var cfg Config
 
@@ -76,6 +83,8 @@ This is usually needed for check allocations and orders.`)
 	rootCmd.Flags().String("csv-columns-period", "period", "CSV column name for the period.")
 	rootCmd.Flags().String("csv-columns-bank", "account", `CSV column name for the name of the bank holding the account.
 This is used in conjunction with the budget to identify the target account.`)
+
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
 	cobra.OnInitialize(func() { common.InitConfig(rootCmd) })
 
