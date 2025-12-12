@@ -44,7 +44,7 @@ jobs:
         run: go test ./...
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: ./bin/*
