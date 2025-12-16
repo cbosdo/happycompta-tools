@@ -179,13 +179,13 @@ type PaymentMethod int
 
 const (
 	PaymentMethodUndefined       PaymentMethod = iota
-	PaymentMethodCheckReceived                 = 12
-	PaymentMethodCash                          = 13
-	PaymentMethodCard                          = 14
-	PaymentMethodTransfer                      = 15
-	PaymentMethodDirectDebit                   = 16
-	PaymentMethodCheckEmitted                  = 22
-	PaymentMethodCheckAllocation               = 23
+	PaymentMethodCheckReceived   PaymentMethod = 12
+	PaymentMethodCash            PaymentMethod = 13
+	PaymentMethodCard            PaymentMethod = 14
+	PaymentMethodTransfer        PaymentMethod = 15
+	PaymentMethodDirectDebit     PaymentMethod = 16
+	PaymentMethodCheckEmitted    PaymentMethod = 22
+	PaymentMethodCheckAllocation PaymentMethod = 23
 )
 
 func (p PaymentMethod) String() string {

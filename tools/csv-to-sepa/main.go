@@ -43,7 +43,7 @@ type ColumnsConfig struct {
 }
 
 var rootCmd = &cobra.Command{
-	Use:     path.Base(os.Args[0]) + "path/to/data",
+	Use:     path.Base(os.Args[0]) + " path/to/data",
 	Short:   "Convert a CSV file to a SEPA transfer file",
 	Args:    cobra.ExactArgs(1),
 	Version: fmt.Sprintf("%s (%s)", version, revision),
@@ -57,7 +57,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().String("output", "", "SEPA file to write to. Defaults to stdout")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "Configuration file path")
+	rootCmd.Flags().StringP("output", "o", "", "SEPA file to write to. Defaults to stdout")
 	rootCmd.Flags().String("batchid", "", "Unique identifier of the transfer initiation")
 	rootCmd.Flags().String("debtor-name", "", "Debtor name")
 	rootCmd.Flags().String("debtor-iban", "", "Debtor IBAN")
@@ -70,8 +71,8 @@ func init() {
 	rootCmd.Flags().String("csv-columns-amount", "amount", "Name of the column for the transaction amount in euro")
 
 	// CSV Structure flags
-	rootCmd.Flags().String("csv-comma", "", "CSV field separator character.")
-	rootCmd.Flags().String("csv-comment", "", "CSV comment character.")
+	rootCmd.Flags().String("csv-comma", ",", "CSV field separator character.")
+	rootCmd.Flags().String("csv-comment", "#", "CSV comment character.")
 
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
 

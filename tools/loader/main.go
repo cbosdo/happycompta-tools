@@ -8,8 +8,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/cbosdo/happycompta-tools/internal/common"
+	"github.com/cbosdo/happycompta-tools/lib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -54,14 +56,15 @@ func init() {
 	rootCmd.PersistentFlags().String("password", "", "User password (REQUIRED)")
 
 	rootCmd.Flags().String("receipts", "receipts", "Folder containing the receipts")
-	// TODO We probably need to add a parameter to select the way the receipts are matched
 
 	// Default Value flags
 	rootCmd.Flags().String("budget", "", "Default value for budget column.")
 	rootCmd.Flags().String("bank", "", "Default value for bank column.")
 	rootCmd.Flags().String("category", "", "Default value for category column.")
-	rootCmd.Flags().String("payment", "", "Default value for payment column.")
-	rootCmd.Flags().String("kind", "", "Default value for kind column.")
+	rootCmd.Flags().String("payment", "", `Default value for payment column.
+Can be one of `+strings.Join(getPaymentMethodStrings(), ", "))
+	rootCmd.Flags().String("kind", "", `Default value for kind column.
+Can be one of `+strings.Join(getKindStrings(), ", "))
 	rootCmd.Flags().String("period", "", "Accounting period to add the entries to. Defaults to the current one.")
 
 	// CSV Structure flags
@@ -93,6 +96,26 @@ This is used in conjunction with the budget to identify the target account.`)
 
 	viper.SetEnvPrefix("LOADER")
 	viper.AutomaticEnv()
+}
+
+func getPaymentMethodStrings() []string {
+	return []string{
+		lib.PaymentMethodCheckReceived.String(),
+		lib.PaymentMethodCash.String(),
+		lib.PaymentMethodCard.String(),
+		lib.PaymentMethodTransfer.String(),
+		lib.PaymentMethodDirectDebit.String(),
+		lib.PaymentMethodCheckEmitted.String(),
+		lib.PaymentMethodCheckAllocation.String(),
+	}
+}
+
+func getKindStrings() []string {
+	return []string{
+		lib.KindSpend.String(),
+		lib.KindTake.String(),
+		lib.KindAllocation.String(),
+	}
 }
 
 func main() {
