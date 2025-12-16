@@ -224,12 +224,10 @@ func createEntryFromRow(
 	// Name
 	entry.Name = getField(row, colMap.Name)
 
-	// Amount
+	// Amount. May not be needed for checks allocations
 	amountStr := getField(row, colMap.Amount)
 	amount := 0.0
-	if amountStr == "" {
-		allErrors = append(allErrors, fmt.Errorf("amount column is missing or empty"))
-	} else {
+	if amountStr != "" {
 		var amountErr error
 		amount, amountErr = parseAmount(amountStr)
 		if amountErr != nil {
@@ -303,6 +301,8 @@ func createEntryFromRow(
 				allErrors = append(allErrors, fmt.Errorf("failed to parse '%s' stock as an integer", stockStr))
 			}
 		}
+	} else if amountStr == "" {
+		allErrors = append(allErrors, fmt.Errorf("missing required amount value for row %d", rowIndex))
 	}
 
 	entry.Allocation = []lib.AllocationLine{
