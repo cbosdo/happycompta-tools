@@ -299,7 +299,7 @@ func TestCreateEntryFromRow_PartyMutualExclusion(t *testing.T) {
 	defaults := getBaseDefaults()
 	categoriesMap := createCategoriesMap(getMockCategories())
 	employeesMap := createEmployeesMap([]lib.Employee{
-		{ID: "E10", Lastname: "DOE", Firstname: "JOHN", Active: true},
+		{ID: "E10", Lastname: "DOE", Firstname: "François", Active: true},
 	})
 	providersMap := createProvidersMap([]lib.Provider{
 		{ID: "P50", Name: "TechCorp Solutions", City: "Faketown"},
@@ -308,7 +308,7 @@ func TestCreateEntryFromRow_PartyMutualExclusion(t *testing.T) {
 
 	// Row specifying BOTH Employee and Provider (ERROR case)
 	row := []string{
-		"01/01/2025", "Test", "10", "Office Supplies", "FON", "John Doe",
+		"01/01/2025", "Test", "10", "Office Supplies", "FON", "François Doe",
 		"TechCorp Solutions", "card", "depenses", "", "", "", "First National Bank",
 	}
 

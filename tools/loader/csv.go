@@ -15,8 +15,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/cbosdo/happycompta-tools/lib"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 // parseCSV builds entries out of the CSV reader..
@@ -86,11 +90,18 @@ func createCategoriesMap(slice []lib.Category) map[string]lib.Category {
 	return categories
 }
 
+func stripDiacritics(in string) string {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	result, _, _ := transform.String(t, in)
+	return result
+}
+
 // Maps Lastname Firstname to employees.
 func createEmployeesMap(slice []lib.Employee) map[string]lib.Employee {
 	employees := map[string]lib.Employee{}
 	for _, employee := range slice {
-		employees[strings.ToLower(fmt.Sprintf("%s %s", employee.Lastname, employee.Firstname))] = employee
+		fullName := strings.ToLower(fmt.Sprintf("%s %s", employee.Lastname, employee.Firstname))
+		employees[stripDiacritics(fullName)] = employee
 	}
 	return employees
 }
@@ -320,7 +331,7 @@ func createEntryFromRow(
 		allErrors = append(allErrors, fmt.Errorf("has both employee ('%s') and provider ('%s') specified", employeeStr, providerStr))
 	} else {
 		if employeeStr != "" {
-			employee, ok := employees[strings.ToLower(employeeStr)]
+			employee, ok := employees[stripDiacritics(strings.ToLower(employeeStr))]
 			if !ok {
 				allErrors = append(allErrors, fmt.Errorf(
 					"unknown employee '%s', the value needs to be in the <Lastname> <Firstname> format",
