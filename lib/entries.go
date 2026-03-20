@@ -128,6 +128,9 @@ func (c *Client) getEntry(url string) (entry Entry, err error) {
 // Mind that the employee / provider only have the ID set.
 func parseEntryResponse(r io.Reader) (entry Entry, err error) {
 	doc, err := html.ParseWithOptions(r, html.ParseOptionEnableScripting(false))
+	if err != nil {
+		return
+	}
 
 	// 1. Extract the JSON string from the <script> tag
 	opData, err := extractOperationJSON(doc)

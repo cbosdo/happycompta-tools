@@ -60,20 +60,24 @@ func entries(cfg Config, periodID string) error {
 	}
 
 	w := csv.NewWriter(os.Stdout)
-	w.Write([]string{"Entry ID", "Date", "Kind", "Title", "Amount", "Receipts"})
+	if err := w.Write([]string{"Entry ID", "Date", "Kind", "Title", "Amount", "Receipts"}); err != nil {
+		return err
+	}
 	for _, entry := range entries {
 		amount := 0.0
 		for _, allocation := range entry.Allocation {
 			amount += allocation.Amount
 		}
-		w.Write([]string{
+		if err := w.Write([]string{
 			entry.ID,
 			entry.Date.Format("02-01-2006"),
 			entry.Kind.String(),
 			entry.Name,
 			fmt.Sprintf("%f", amount),
 			strings.Join(entry.Receipts, " "),
-		})
+		}); err != nil {
+			return err
+		}
 	}
 	w.Flush()
 	return nil
