@@ -76,83 +76,17 @@ func TestExtractStatusFromStatusCell(t *testing.T) {
 // =========================================================================
 
 func TestParsePeriods(t *testing.T) {
-	inputData := `
-	<html><body>
-	<table id="dt_basic">
-    <tbody>
-        <tr>
-            <td><span class='label label-success'><span class='hidden'>" . 1 . "</span>En cours</span></td>
-            <td>01/01/2025</td>
-            <td>31/12/2025</td>
-            <td>
-			<a data-id="123456">Edit</a>
-            </td>
-        </tr>
-        <tr>
-            <td><span class='label label-danger'><span class='hidden'>" . 3 . "</span>Clôture définitive</span></td>
-            <td>01/01/2024</td>
-            <td>31/12/2024</td>
-            <td>
-                <!-- No ID means this row should be skipped -->
-            </td>
-        </tr>
-        <tr>
-            <td><span class='label label-danger'><span class='hidden'>" . 3 . "</span>Clôture définitive</span></td>
-            <td>15/06/2023</td>
-            <td>14/06/2024</td>
-            <td>
-                <a data-id="123457">Delete</a>
-            </td>
-        </tr>
-		<tr> <!-- Row with non-date in date field -->
-            <td><span class='label label-danger'><span class='hidden'>" . 3 . "</span>Clôture définitive</span></td>
-            <td>INVALID DATE</td>
-            <td>31/12/2022</td>
-            <td>
-                <a data-id="123458">Delete</a>
-            </td>
-        </tr>
-    </tbody>
-	</table>
-	</body></html>`
-
-	reader := strings.NewReader(inputData)
-
-	// Since we expect an error on the INVALID DATE row, we test for the error first.
-	_, err := parsePeriods(reader)
-	if err == nil || !strings.Contains(err.Error(), "failed to parse start time") {
-		t.Fatalf("parsePeriods expected a date parsing error, but got: %v", err)
-	}
-
 	// Re-run with valid data to test successful parsing
 	validInputData := `
 	<html><body>
 	<table id="dt_basic">
     <tbody>
-        <tr>
-            <td><span class='label label-success'><span class='hidden'>" . 1 . "</span>En cours</span></td>
-            <td>01/01/2025</td>
-            <td>31/12/2025</td>
-            <td>
-                <a data-id="123456">Edit</a>
-            </td>
-        </tr>
-        <tr>
-            <td><span class='label label-danger'><span class='hidden'>" . 2 . "</span>Clôture définitive</span></td>
-            <td>15/06/2023</td>
-            <td>14/06/2024</td>
-            <td>
-                <a data-id="123457">Delete</a>
-            </td>
-        </tr>
-		<tr>
-            <td><span class='label label-danger'><span class='hidden'>" . 3 . "</span>Clôture définitive</span></td>
-            <td>01/01/2024</td>
-            <td>31/12/2024</td>
-            <td>
-                <!-- No data-id provided, ID should be "" -->
-            </td>
-        </tr>
+		<div>
+            <select class="form-control filter filtre-actif" name="exercice_id">
+				<option value="123456">Du 01/01/2025 au 31/12/2025 [En cours]</option>
+				<option value="123457">Du 15/06/2023 au 14/06/2024 [Clôture provisoire]</option>
+				<option value="123458">Du 01/01/2024 au 31/12/2024 [Clôture définitive]</option>
+        </div>
     </tbody>
 	</table>
 	</body></html>`
@@ -190,9 +124,9 @@ func TestParsePeriods(t *testing.T) {
 		t.Errorf("Period 2 mismatch. Got %+v, Expected %+v", periods[1], expectedP2)
 	}
 
-	// Expected values for Period 3 (ID: "")
+	// Expected values for Period 3
 	expectedP3 := Period{
-		ID:     "",
+		ID:     "123458",
 		Status: PeriodStatusDefinitelyClosed,
 		Start:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		End:    time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC),

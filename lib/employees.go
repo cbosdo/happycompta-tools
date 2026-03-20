@@ -62,7 +62,7 @@ func (c *Client) ListEmployees() (employees []Employee, err error) {
 
 func parseEmployeesResponse(r io.Reader) (employees []Employee, err error) {
 	doc, err := parseHtmlViewResponse(r)
-	if err != nil {
+	if err != nil || doc == nil {
 		return
 	}
 	return parseEmployeesTable(doc)
