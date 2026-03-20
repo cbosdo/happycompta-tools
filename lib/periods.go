@@ -25,9 +25,9 @@ type Period struct {
 
 // ListPeriods gets the data of all the accounting periods of the organization.
 func (c *Client) ListPeriods() (periods []Period, err error) {
-	resp, err := c.client.Get(url_base + "/exercices/index")
+	resp, err := c.client.Get(url_base + "/operations/index")
 	if err != nil {
-		err = fmt.Errorf("failed to get the periods: %s", err)
+		err = fmt.Errorf("failed to get the operations page: %s", err)
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -81,7 +81,7 @@ func extractStatusFromStatusCell(cell *html.Node) (status PeriodStatus, err erro
 	return 0, fmt.Errorf("could not find the hidden status span structure")
 }
 
-// parsePeriods reads the periods from HTML content.
+// parsePeriods reads the periods from HTML content.
 func parsePeriods(r io.Reader) (periods []Period, err error) {
 	doc, err := html.Parse(r)
 	if err != nil {
@@ -89,65 +89,54 @@ func parsePeriods(r io.Reader) (periods []Period, err error) {
 		return
 	}
 
-	tbody := findNodeWithTagName(doc, "tbody")
-
-	if tbody == nil {
-		err = fmt.Errorf("could not find the table listing the periods")
+	selectNode := findNodeWithKeyValueAttr(doc, "name", "exercice_id")
+	if selectNode == nil {
+		err = fmt.Errorf("could not find the select listing the periods")
 		return
 	}
 
-	rowIndex := 0
+	// Regex to extract dates and status text
+	// Example: Du 01/01/2026 au 31/12/2026 [En cours]
+	re := regexp.MustCompile(`Du (\d{2}/\d{2}/\d{4}) au (\d{2}/\d{2}/\d{4}) \[(.+)\]`)
 
-	const (
-		columnActions = 3
-		columnStatus  = 0
-		columnStart   = 1
-		columnEnd     = 2
-	)
+	for c := selectNode.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode && c.Data == "option" {
+			var p Period
+			p.ID = getAttr(c, "value")
 
-	// Iterate through <tr> nodes in <tbody>
-	for row := tbody.FirstChild; row != nil; row = row.NextSibling {
-		if row.Type != html.ElementNode || row.Data != "tr" {
-			continue
-		}
-		rowIndex++
+			text := html.UnescapeString(extractTextContent(c))
+			matches := re.FindStringSubmatch(text)
 
-		cells := []*html.Node{}
-		for cell := row.FirstChild; cell != nil; cell = cell.NextSibling {
-			if cell.Type == html.ElementNode && cell.Data == "td" {
-				cells = append(cells, cell)
+			if len(matches) == 4 {
+				// Parse Start Date
+				p.Start, err = time.Parse(DateLayout, matches[1])
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse start date %s: %w", matches[1], err)
+				}
+
+				// Parse End Date
+				p.End, err = time.Parse(DateLayout, matches[2])
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse end date %s: %w", matches[2], err)
+				}
+
+				// Map status string to PeriodStatus type
+				statusText := matches[3]
+				switch statusText {
+				case "En cours":
+					p.Status = PeriodStatusCurrent
+				case "Clôture provisoire":
+					p.Status = PeriodStatusProvisionallyClosed
+				case "Clôture définitive":
+					p.Status = PeriodStatusDefinitelyClosed
+				default:
+					p.Status = PeriodStatusUndefined
+				}
+
+				periods = append(periods, p)
 			}
 		}
-
-		if len(cells) < 4 {
-			continue
-		}
-
-		var period Period
-
-		period.ID = extractIDFromActionsCell(cells[columnActions])
-
-		period.Status, err = extractStatusFromStatusCell(cells[columnStatus])
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", rowIndex, err)
-			return
-		}
-
-		startStr := extractTextContent(cells[columnStart])
-		period.Start, err = time.Parse(DateLayout, startStr)
-		if err != nil {
-			err = fmt.Errorf("row %d: failed to parse start time '%s': %s", rowIndex, startStr, err)
-			return
-		}
-
-		endStr := extractTextContent(cells[columnEnd])
-		period.End, err = time.Parse(DateLayout, endStr)
-		if err != nil {
-			err = fmt.Errorf("row %d: failed to parse end time '%s': %s", rowIndex, endStr, err)
-			return
-		}
-
-		periods = append(periods, period)
 	}
+
 	return
 }

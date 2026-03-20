@@ -6,6 +6,9 @@
 package lib
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -95,4 +98,24 @@ func findClassText(node *html.Node, className string) string {
 		return extractTextContent(found)
 	}
 	return ""
+}
+
+func parseHtmlViewResponse(r io.Reader) (doc *html.Node, err error) {
+	var content struct {
+		View string `json:"view"`
+	}
+
+	jsonDecoder := json.NewDecoder(r)
+	if err = jsonDecoder.Decode(&content); err != nil {
+		err = fmt.Errorf("failed to decode JSON: %s", err)
+		return
+	}
+
+	htmlContent := content.View
+	if htmlContent == "" {
+		return
+	}
+
+	htmlReader := strings.NewReader(htmlContent)
+	return html.ParseWithOptions(htmlReader, html.ParseOptionEnableScripting(false))
 }

@@ -61,6 +61,7 @@ func init() {
 
 	rootCmd.PersistentFlags().VisitAll(common.BindFlagsToViper)
 	rootCmd.Flags().VisitAll(common.BindFlagsToViper)
+	rootCmd.AddCommand(newEntriesCmd())
 
 	viper.SetEnvPrefix("LOADER")
 	viper.AutomaticEnv()

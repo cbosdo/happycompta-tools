@@ -6,7 +6,6 @@
 package lib
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,28 +61,7 @@ func (c *Client) ListEmployees() (employees []Employee, err error) {
 }
 
 func parseEmployeesResponse(r io.Reader) (employees []Employee, err error) {
-	var content struct {
-		View string `json:"view"`
-	}
-
-	jsonDecoder := json.NewDecoder(r)
-	if err = jsonDecoder.Decode(&content); err != nil {
-		err = fmt.Errorf("failed to decode JSON: %s", err)
-		return
-	}
-
-	htmlContent := content.View
-	if htmlContent == "" {
-		return
-	}
-
-	htmlReader := strings.NewReader(htmlContent)
-	doc, err := html.ParseWithOptions(htmlReader, html.ParseOptionEnableScripting(false))
-	if err != nil {
-		err = fmt.Errorf("failed to parse the html employees table: %s", err)
-		return
-	}
-
+	doc, err := parseHtmlViewResponse(r)
 	return parseEmployeesTable(doc)
 }
 
