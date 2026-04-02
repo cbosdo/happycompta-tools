@@ -105,7 +105,7 @@ const transferV3 = `<?xml version="1.0" encoding="utf-8"?>
             <MsgId>{{ .ID }}</MsgId>
             <CreDtTm>{{ .Timestamp }}</CreDtTm>
             <NbOfTxs>{{ .Count }}</NbOfTxs>
-            <CtrlSum>{{ .Sum }}</CtrlSum>
+            <CtrlSum>{{ printf "%.2f" .Sum }}</CtrlSum>
             <InitgPty>
                 <Nm>{{ .Initiator.Name }}</Nm>
             </InitgPty>
@@ -116,7 +116,7 @@ const transferV3 = `<?xml version="1.0" encoding="utf-8"?>
             <PmtMtd>TRF</PmtMtd>
             <BtchBookg>false</BtchBookg>
             <NbOfTxs>{{ .Transactions | len }}</NbOfTxs>
-            <CtrlSum>{{ .Sum }}</CtrlSum>
+            <CtrlSum>{{ printf "%.2f" .Sum }}</CtrlSum>
             <ReqdExctnDt>{{ $.ExecutionDate }}</ReqdExctnDt>
             <Dbtr>
                 <Nm>{{ .Debtor.Name }}</Nm>
@@ -137,7 +137,7 @@ const transferV3 = `<?xml version="1.0" encoding="utf-8"?>
                     <EndToEndId>{{ .EndToEndID }}</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">{{ .Amount }}</InstdAmt>
+                    <InstdAmt Ccy="EUR">{{ printf "%.2f" .Amount }}</InstdAmt>
                 </Amt>
                 <ChrgBr>SLEV</ChrgBr>
                 <CdtrAgt>
