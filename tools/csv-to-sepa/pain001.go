@@ -34,9 +34,11 @@ func toPain001(flags Config, dataPath string) error {
 	flags.Debtor.BIC = strings.ReplaceAll(flags.Debtor.BIC, " ", "")
 	flags.Debtor.IBAN = strings.ReplaceAll(flags.Debtor.IBAN, " ", "")
 
-	transferInit := NewTransferInitiation(flags.BatchID, &flags.Debtor)
+	// Intentionally limiting to 30 instead of 35, to give room for `/<count>` if needed.
+	transferInit := NewTransferInitiation(sanitizeString(flags.BatchID, 30), &flags.Debtor)
 	payment := Payment{}
 	var header map[string]int
+	var count = 0
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -53,17 +55,20 @@ func toPain001(flags Config, dataPath string) error {
 			}
 			continue
 		}
+		// Only count the data rows, not the header
+		count++
 
 		// Store the data
 		amountStr := strings.ReplaceAll(record[header[columnsAmount]], "€", "")
+		// The input file may be using french formatting, assuming commas won't be used as thousands separators
+		amountStr = strings.ReplaceAll(amountStr, ",", ".")
 		amount, err := strconv.ParseFloat(amountStr, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse amount %s to a number: %s", amountStr, err)
 		}
 		transaction := Transaction{
-			Amount:     amount,
-			Info:       sanitizeString(record[header[columnInfo]], 35),
-			EndToEndID: sanitizeString(record[header[columnID]], 35),
+			Amount: amount,
+			Info:   sanitizeString(record[header[columnInfo]], 35),
 			Creditor: Party{
 				Name: sanitizeString(record[header[columnCreditor]], 140),
 				IBAN: sanitizeID(record[header[columnIBAN]]),
@@ -71,6 +76,12 @@ func toPain001(flags Config, dataPath string) error {
 			},
 			Purpose: "REFU", // TODO Use an optional column for this
 		}
+		endtoendID := fmt.Sprintf("%s/%d", flags.BatchID, count)
+		if header[columnID] >= 0 {
+			endtoendID = record[header[columnID]]
+		}
+		transaction.EndToEndID = sanitizeString(endtoendID, 35)
+
 		payment.Transactions = append(payment.Transactions, &transaction)
 	}
 	transferInit.AddPayment(&payment)
@@ -102,7 +113,10 @@ func getCSVHeader(flags ColumnsConfig, record []string) (map[string]int, error) 
 		csvName := flagsValue.FieldByName(column).String()
 		idx := slices.Index(record, csvName)
 		if idx < 0 {
-			return header, fmt.Errorf("column not found in CSV file: %s", csvName)
+			if column != columnID {
+				return header, fmt.Errorf("column not found in CSV file: %s", csvName)
+			}
+			fmt.Printf("ID computed by appending /<line number> to the batch id")
 		}
 		header[column] = idx
 	}
