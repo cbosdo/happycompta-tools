@@ -378,7 +378,7 @@ func (c *Client) AddEntry(operation *Entry) error {
 
 			filename := filepath.Base(filePath)
 
-			part, err := formWriter.CreateFormFile("fichiers[]", filename)
+			part, err := formWriter.CreateFormFile("fichiersOperation[]", filename)
 			if err != nil {
 				writer.CloseWithError(fmt.Errorf("error creating form file part for %s: %w", filename, err))
 				return
