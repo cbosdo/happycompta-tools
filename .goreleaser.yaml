@@ -12,8 +12,8 @@ before:
 
 builds:
   - id: loader
-    main: ./tools/loader
-    binary: loader
+    main: ./tools/happycompta-loader
+    binary: happycompta-loader
     env:
       - CGO_ENABLED=0
     goos:
@@ -28,8 +28,8 @@ builds:
       - -X 'github.com/cbosdo/happycompta-tools/tools/loader.revision={{.FullCommit}}'
 
   - id: dumper
-    main: ./tools/dumper
-    binary: dumper
+    main: ./tools/happycompta-dumper
+    binary: happycompta-dumper
     env:
       - CGO_ENABLED=0
     goos:
