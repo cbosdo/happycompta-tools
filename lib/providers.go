@@ -30,6 +30,11 @@ func (p *Provider) GetID() string {
 	return p.ID
 }
 
+// String is needed for Provider to implement the Party interface.
+func (p *Provider) String() string {
+	return p.Name
+}
+
 // ListProviders queries the data of all the providers of the organization, included archived ones.
 func (c *Client) ListProviders() (providers []Provider, err error) {
 	resp, err := c.client.Get(url_base + "/fournisseurs/index/archiv%C3%A9s")

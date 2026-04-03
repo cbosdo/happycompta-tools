@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -147,6 +148,12 @@ func addReceipts(receiptsFolder string, entries []lib.Entry) error {
 				}
 				applied = true
 			}
+		}
+	}
+
+	for i, entry := range entries {
+		if len(entry.Receipts) == 0 {
+			log.Printf("No receipt found for entry #%d %s (%s)", i, entry.Name, entry.Party.String())
 		}
 	}
 

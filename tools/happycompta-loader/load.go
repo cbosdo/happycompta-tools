@@ -73,6 +73,10 @@ func loadImpl(cfg Config) error {
 
 	// Load the entries to happy-compta
 	for i, entry := range entries {
+		if cfg.Dryrun {
+			log.Printf("DRY-RUN Adding entry %v", entry)
+			continue
+		}
 		err := client.AddEntry(&entry)
 		if err != nil {
 			log.Printf("failed to add entry #%d: %s", i, err)

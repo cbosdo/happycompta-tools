@@ -71,6 +71,7 @@ type Defaults struct {
 
 // Config holds the application parameters.
 type Config struct {
+	Dryrun   bool      `mapstructure:"dryrun"`
 	Email    string    `mapstructure:"email"`
 	Password string    `mapstructure:"password"`
 	Receipts string    `mapstructure:"receipts"`

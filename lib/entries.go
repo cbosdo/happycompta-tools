@@ -36,6 +36,8 @@ type AllocationLine struct {
 type Party interface {
 	// GetID returns the identifier of the party.
 	GetID() string
+	// String returns a string representation of the party
+	String() string
 }
 
 // Entry represents an entry in the bookkeeping system.

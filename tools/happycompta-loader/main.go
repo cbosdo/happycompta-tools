@@ -51,6 +51,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.PersistentFlags().Bool("dryrun", false, "Do not create the entries, just check")
 	rootCmd.PersistentFlags().StringP("config", "c", "", "Configuration file path")
 	rootCmd.PersistentFlags().String("email", "", "User email address (REQUIRED)")
 	rootCmd.PersistentFlags().String("password", "", "User password (REQUIRED)")

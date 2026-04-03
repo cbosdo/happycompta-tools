@@ -29,6 +29,11 @@ func (e *Employee) GetID() string {
 	return e.ID
 }
 
+// String is needed for Employee to implement the Party interface.
+func (e *Employee) String() string {
+	return fmt.Sprintf("%s %s", e.Firstname, e.Lastname)
+}
+
 // IsValid indicates if the required data are available.
 func (e *Employee) IsValid() bool {
 	return e.ID != "" && e.Firstname != "" && e.Lastname != ""
