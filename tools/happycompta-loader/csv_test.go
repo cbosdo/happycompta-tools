@@ -169,11 +169,12 @@ var baseTime = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
 func getMockCategories() []lib.Category {
 	return []lib.Category{
-		{ID: 100, Name: "Office Supplies", Budget: lib.BudgetFON, Stock: false},
-		{ID: 101, Name: "Rent", Budget: lib.BudgetFON, Stock: false},
-		{ID: 200, Name: "Gifts", Budget: lib.BudgetASC, Stock: false},
-		{ID: 201, Name: "Check Alloc", Budget: lib.BudgetASC, Stock: true}, // Requires stock
-		{ID: 300, Name: "Unused", Budget: lib.BudgetFON},
+		{ID: 100, Name: "Office Supplies", Budget: lib.BudgetFON, Stock: false, Kind: lib.KindSpend},
+		{ID: 101, Name: "Rent", Budget: lib.BudgetFON, Stock: false, Kind: lib.KindSpend},
+		{ID: 202, Name: "Gifts", Budget: lib.BudgetASC, Stock: false, Kind: lib.KindTake},
+		{ID: 200, Name: "Gifts", Budget: lib.BudgetASC, Stock: false, Kind: lib.KindSpend},
+		{ID: 201, Name: "Check Alloc", Budget: lib.BudgetASC, Stock: true, Kind: lib.KindAllocation}, // Requires stock
+		{ID: 300, Name: "Unused", Budget: lib.BudgetFON, Kind: lib.KindSpend},
 	}
 }
 

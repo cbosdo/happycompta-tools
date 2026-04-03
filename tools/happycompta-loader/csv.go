@@ -84,7 +84,7 @@ func parseCSV(
 func createCategoriesMap(slice []lib.Category) map[string]lib.Category {
 	categories := map[string]lib.Category{}
 	for _, category := range slice {
-		categories[fmt.Sprintf("%s|%s", &category.Budget, category.Name)] = category
+		categories[fmt.Sprintf("%s|%s|%s", &category.Budget, category.Name, category.Kind.String())] = category
 	}
 
 	return categories
@@ -288,7 +288,7 @@ func createEntryFromRow(
 
 	// Only attempt category lookup if budget is valid (to avoid logging redundant errors)
 	if entry.Budget != lib.BudgetUndefined {
-		categoryKey := fmt.Sprintf("%s|%s", entry.Budget, categoryName)
+		categoryKey := fmt.Sprintf("%s|%s|%s", entry.Budget, categoryName, entry.Kind.String())
 		category, categoryOK = categories[categoryKey]
 
 		if !categoryOK {
