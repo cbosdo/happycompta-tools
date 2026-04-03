@@ -101,7 +101,9 @@ func createEmployeesMap(slice []lib.Employee) map[string]lib.Employee {
 	employees := map[string]lib.Employee{}
 	for _, employee := range slice {
 		fullName := strings.ToLower(fmt.Sprintf("%s %s", employee.Lastname, employee.Firstname))
+		fullName2 := strings.ToLower(fmt.Sprintf("%s %s", employee.Firstname, employee.Lastname))
 		employees[stripDiacritics(fullName)] = employee
+		employees[stripDiacritics(fullName2)] = employee
 	}
 	return employees
 }
@@ -334,7 +336,7 @@ func createEntryFromRow(
 			employee, ok := employees[stripDiacritics(strings.ToLower(employeeStr))]
 			if !ok {
 				allErrors = append(allErrors, fmt.Errorf(
-					"unknown employee '%s', the value needs to be in the <Lastname> <Firstname> format",
+					"unknown employee '%s', the value needs to be in the <Lastname> <Firstname> or <Firstname> <Lastname> format",
 					employeeStr,
 				))
 			} else {

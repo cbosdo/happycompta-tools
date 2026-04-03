@@ -68,10 +68,10 @@ func createEmployeeEntryMap(entries []lib.Entry) map[string][]int {
 			fnLn := strings.ToLower(strings.TrimSpace(fmt.Sprintf("%s %s", emp.Firstname, emp.Lastname)))
 
 			if lnFn != " " {
-				employeeMap[lnFn] = append(employeeMap[lnFn], i)
+				employeeMap[stripDiacritics(lnFn)] = append(employeeMap[lnFn], i)
 			}
 			if fnLn != " " && lnFn != fnLn {
-				employeeMap[fnLn] = append(employeeMap[fnLn], i)
+				employeeMap[stripDiacritics(fnLn)] = append(employeeMap[fnLn], i)
 			}
 		}
 	}
@@ -142,7 +142,7 @@ func addReceipts(receiptsFolder string, entries []lib.Entry) error {
 
 		// Folder name matches employee full name.
 		if !applied {
-			if indices, ok := employeeMap[strings.ToLower(folderName)]; ok {
+			if indices, ok := employeeMap[stripDiacritics(strings.ToLower(folderName))]; ok {
 				for _, index := range indices {
 					entries[index].Receipts = receipts
 				}
